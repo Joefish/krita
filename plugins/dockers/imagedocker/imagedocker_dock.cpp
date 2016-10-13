@@ -25,6 +25,7 @@
 #include <KoColorSpaceRegistry.h>
 #include <KoColor.h>
 #include <kis_icon.h>
+#include <kis_highlighted_button.h>
 
 #include <QFileSystemModel>
 #include <QImageReader>
@@ -39,6 +40,7 @@
 #include <QDesktopServices>
 #include <QTemporaryFile>
 #include <QMimeData>
+#include <QToolButton>
 
 #include "ui_wdgimagedocker.h"
 #include "ui_wdgImageViewPopup.h"
@@ -168,6 +170,19 @@ struct PopupWidgetUI: public QWidget, public Ui_wdgImageViewPopup
 {
     PopupWidgetUI() {
         setupUi(this);
+
+        bnZoom->setIcon(KisIconUtils::loadIcon("tool_zoom"));
+        bnTimer->setIcon(KisIconUtils::loadIcon("calligraphy"));
+        bnColorpicker->setIcon(KisIconUtils::loadIcon("krita_tool_color_picker"));
+        bnRotate->setIcon(KisIconUtils::loadIcon("krita_tool_transform"));
+
+        KisHighlightedToolButton *hlButton = new KisHighlightedToolButton(this);
+        int menuPadding = 10;
+        int iconsize = 16;
+        hlButton->setFixedSize(iconsize + menuPadding, iconsize);
+        hlButton->setCheckable(true);
+//        hlButton->setDefaultAction(m_hMirrorAction);
+        hlButton->setPopupMode(QToolButton::MenuButtonPopup);
     }
 };
 
@@ -199,18 +214,9 @@ ImageDockerDock::ImageDockerDock():
     m_ui->thumbView->setScene(m_imageStripScene);
     m_ui->treeView->setModel(m_proxyModel);
     m_ui->cmbImg->setModel(m_imgListModel);
+    // TODO: Change to a more fitting icon
     m_ui->bnPopup->setIcon(KisIconUtils::loadIcon("zoom-original"));
     m_ui->bnPopup->setPopupWidget(m_popupUi);
-
-    m_popupUi->zoomSlider->setRange(5, 500);
-    m_popupUi->zoomSlider->setValue(100);
-
-    m_zoomButtons->addButton(m_popupUi->bnZoomFit   , ImageView::VIEW_MODE_FIT);
-    m_zoomButtons->addButton(m_popupUi->bnZoomAdjust, ImageView::VIEW_MODE_ADJUST);
-    m_zoomButtons->addButton(m_popupUi->bnZoom25    , 25);
-    m_zoomButtons->addButton(m_popupUi->bnZoom50    , 50);
-    m_zoomButtons->addButton(m_popupUi->bnZoom75    , 75);
-    m_zoomButtons->addButton(m_popupUi->bnZoom100   , 100);
 
     installEventFilter(this);
 
@@ -238,7 +244,6 @@ ImageDockerDock::ImageDockerDock():
     connect(m_ui->cmbImg             , SIGNAL(activated(int))                         , SLOT(slotImageChoosenFromComboBox(int)));
     connect(m_ui->imgView            , SIGNAL(sigColorSelected(const QColor&))        , SLOT(slotColorSelected(const QColor)));
     connect(m_ui->imgView            , SIGNAL(sigViewModeChanged(int, qreal))         , SLOT(slotViewModeChanged(int, qreal)));
-    connect(m_popupUi->zoomSlider    , SIGNAL(valueChanged(int))                      , SLOT(slotZoomChanged(int)));
     connect(m_zoomButtons            , SIGNAL(buttonClicked(int))                     , SLOT(slotZoomChanged(int)));
     connect(m_zoomButtons            , SIGNAL(buttonClicked(int))                     , SLOT(slotCloseZoomPopup()));
 
@@ -369,9 +374,6 @@ void ImageDockerDock::setZoom(const ImageInfo& info)
 
     int zoom = qRound(m_ui->imgView->getScale() * 100.0f);
 
-    m_popupUi->zoomSlider->blockSignals(true);
-    m_popupUi->zoomSlider->setValue(zoom);
-    m_popupUi->zoomSlider->blockSignals(false);
 }
 
 
@@ -533,9 +535,6 @@ void ImageDockerDock::slotViewModeChanged(int viewMode, qreal scale)
 
         int zoom = qRound(scale * 100.0);
 
-        m_popupUi->zoomSlider->blockSignals(true);
-        m_popupUi->zoomSlider->setValue(zoom);
-        m_popupUi->zoomSlider->blockSignals(false);
     }
 }
 
